@@ -16,7 +16,7 @@ RTC_CONFIGURATION = RTCConfiguration({
 })
 
 # تحميل موديل YOLO nano
-model = YOLO("yolov8n.pt")
+model = YOLO("best.pt")
 model.fuse()
 
 CLASS_NAMES = ["microsleep", "neutral", "yawning"]
