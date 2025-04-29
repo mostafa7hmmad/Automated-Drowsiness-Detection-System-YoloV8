@@ -2,58 +2,82 @@ import streamlit as st
 import cv2
 from ultralytics import YOLO
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration
+import av
 
-# Configure STUN server for WebRTC
+# إعداد STUN للسيرفر WebRTC
 RTC_CONFIGURATION = RTCConfiguration({
     "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
 })
 
-# Load your trained YOLOv8 model (replace 'best.pt' with your model path)
-model = YOLO("best.pt")
+# تحميل موديل YOLO
+model = YOLO("best.pt")  # تأكد أن هذا الملف موجود في نفس المسار
 
-# Video frame processor for detection
+# خريطة التصنيفات
+CLASS_NAMES = ["microsleep", "neutral", "yawning"]
+COLOR_MAP = {
+    "microsleep": (0, 0, 255),  # أحمر
+    "neutral": (0, 255, 0),     # أخضر
+    "yawning": (0, 0, 255)      # أحمر
+}
+
+# معالج الفيديو
 class VideoProcessor(VideoTransformerBase):
-    def __init__(self):
-        self.buzzer_on = False
-
     def transform(self, frame):
-        # Convert frame to numpy array
         img = frame.to_ndarray(format="bgr24")
-        # Run YOLOv8 inference
-        results = model(img)[0]
-        not_natural_detected = False
+        results = model(img, verbose=False)[0]
 
-        # Iterate detections
         for box, cls in zip(results.boxes.xyxy, results.boxes.cls):
             x1, y1, x2, y2 = map(int, box)
-            label = model.names[int(cls)]
-            color = (0, 255, 0) if label == "Natural" else (0, 0, 255)
+            label_index = int(cls)
+            label = CLASS_NAMES[label_index]
+            color = COLOR_MAP[label]
+
+            # رسم المستطيل والنص
             cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
-            cv2.putText(img, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2)
-
-            if label != "Natural":
-                not_natural_detected = True
-
-        # Immediate buzzer logic
-        self.buzzer_on = not_natural_detected
-
+            cv2.putText(
+                img, label, (x1, y1 - 10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2
+            )
         return img
 
-# Initialize processor
-processor = VideoProcessor()
+# واجهة Streamlit
+st.set_page_config(
+    page_title="Real-Time Drowsiness Detection",
+    layout="wide"
+)
+st.markdown("<h1 style='text-align: center;'>🚨 Real-Time Face State Detection (YOLOv8)</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center;'>Detects Microsleep, Neutral, and Yawning with webcam. Toggle fullscreen below.</p>", unsafe_allow_html=True)
 
-# Create Streamlit UI
-st.title("YOLOv8 Face Naturality Detection with Eye Monitoring")
+# زر تكبير الكاميرا
+st.markdown("""
+    <style>
+    .fullscreen-btn {
+        display: block;
+        margin: 10px auto;
+        padding: 10px 25px;
+        font-size: 18px;
+        background-color: #0a84ff;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+    }
+    </style>
+    <button class="fullscreen-btn" onclick="document.querySelector('video').requestFullscreen()">🔍 Fullscreen Camera</button>
+    <script>
+        document.addEventListener('fullscreenchange', () => {
+            if (!document.fullscreenElement) {
+                console.log('Exited fullscreen');
+            }
+        });
+    </script>
+""", unsafe_allow_html=True)
 
-# Start webcam stream
-webrtc_ctx = webrtc_streamer(
-    key="yolo-stream",
-    video_processor_factory=lambda: processor,
+# بث الفيديو
+webrtc_streamer(
+    key="live-detection",
+    video_processor_factory=VideoProcessor,
     rtc_configuration=RTC_CONFIGURATION,
     media_stream_constraints={"video": True, "audio": False},
-    async_processing=True,
+    async_processing=True
 )
-
-# Play alert sound immediately when Not Natural
-if webrtc_ctx.state.playing and processor.buzzer_on:
-    st.audio("alert.mp3", format="audio/mp3", start_time=0)
