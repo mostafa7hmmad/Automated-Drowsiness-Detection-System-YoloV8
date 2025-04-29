@@ -6,19 +6,20 @@ from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfigura
 import av
 import pygame  # مكتبة الصوت
 
-# إعداد الصوت
+# ⬇️ إعداد البازر
 pygame.mixer.init()
-pygame.mixer.music.load("1.mp3")  # تأكد من وجود الملف في نفس المجلد أو حط المسار الصحيح
+pygame.mixer.music.load("buzzer.mp3")  # تأكد أن الملف buzzer.mp3 موجود في نفس فولدر المشروع
 
-# إعداد RTC
+# ⬇️ إعداد الاتصال WebRTC
 RTC_CONFIGURATION = RTCConfiguration({
     "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
 })
 
-# تحميل موديل YOLO nano
-model = YOLO("best.pt")
+# ⬇️ تحميل موديل YOLO الخاص بك
+model = YOLO("paste.pt")  # تأكد أن paste.pt موجود في نفس مجلد الكود
 model.fuse()
 
+# ⬇️ تصنيفات النموذج والألوان المستخدمة
 CLASS_NAMES = ["microsleep", "neutral", "yawning"]
 COLOR_MAP = {
     "microsleep": (0, 0, 255),
@@ -26,23 +27,20 @@ COLOR_MAP = {
     "yawning": (0, 0, 255)
 }
 
-# معالج الفيديو
+# ⬇️ كلاس معالجة الفيديو
 class FastVideoProcessor(VideoTransformerBase):
     def __init__(self):
         self.frame_skip = 2
         self.counter = 0
         self.prev_result = None
-        self.buzzer_on = False  # حالة تشغيل الصوت
 
     def play_buzzer(self):
-        if not self.buzzer_on:
-            pygame.mixer.music.play(-1)  # تشغيل مستمر
-            self.buzzer_on = True
+        if not pygame.mixer.music.get_busy():
+            pygame.mixer.music.play(-1)  # تشغيل متكرر بلا توقف
 
     def stop_buzzer(self):
-        if self.buzzer_on:
+        if pygame.mixer.music.get_busy():
             pygame.mixer.music.stop()
-            self.buzzer_on = False
 
     def transform(self, frame):
         img = frame.to_ndarray(format="bgr24")
@@ -65,7 +63,6 @@ class FastVideoProcessor(VideoTransformerBase):
                 label = CLASS_NAMES[label_index]
                 color = COLOR_MAP[label]
 
-                # توسيع الإحداثيات
                 x1, y1, x2, y2 = [int(x * 2) for x in (x1, y1, x2, y2)]
                 cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
                 cv2.putText(img, label, (x1, y1 - 10),
@@ -74,7 +71,6 @@ class FastVideoProcessor(VideoTransformerBase):
                 if label != "neutral":
                     non_neutral_detected = True
 
-        # تحكم في الصوت
         if non_neutral_detected:
             self.play_buzzer()
         else:
@@ -82,11 +78,11 @@ class FastVideoProcessor(VideoTransformerBase):
 
         return img
 
-# Streamlit App
+# ⬇️ Streamlit واجهة
 st.set_page_config(page_title="Fast Drowsiness Detection", layout="wide")
 st.title("🚀 Fast YOLOv8 Live Detection")
 
-# زر تكبير الشاشة
+# ⬇️ زر تكبير الشاشة
 st.markdown("""
 <button onclick="document.querySelector('video').requestFullscreen()" style="
     display:block;
@@ -100,7 +96,7 @@ st.markdown("""
     cursor:pointer;">Fullscreen Camera</button>
 """, unsafe_allow_html=True)
 
-# تشغيل الكاميرا
+# ⬇️ تشغيل الكاميرا
 webrtc_streamer(
     key="fast-stream",
     video_processor_factory=FastVideoProcessor,
