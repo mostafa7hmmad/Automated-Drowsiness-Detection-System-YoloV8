@@ -44,7 +44,6 @@ processor = VideoProcessor()
 
 # Create Streamlit UI
 st.title("YOLOv8 Face Naturality Detection with Eye Monitoring")
-st.write("إذا تم تصنيف الحالة كـ 'Not Natural' (عيون مغلقة)، يصدر صوت تنبيه فوري حتى تعود الحالة لـ 'Natural'.")
 
 # Start webcam stream
 webrtc_ctx = webrtc_streamer(
