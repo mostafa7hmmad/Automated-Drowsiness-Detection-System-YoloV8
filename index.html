@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Face State Detection</title>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+  <div id="video-container">
+    <video id="video" autoplay muted playsinline></video>
+    <canvas id="canvas"></canvas>
+  </div>
+
+  <!-- 🔊 البازر -->
+  <audio id="buzzer" src="buzzer.mp3" preload="auto" loop></audio>
+
+  <script src="script.js"></script>
+</body>
+<style>body {
+  margin: 0;
+  background-color: #000;
+  overflow: hidden;
+}
+
+#video-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+}
+
+video, canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+</style>
+</html>
