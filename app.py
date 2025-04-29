@@ -4,17 +4,21 @@ import numpy as np
 from ultralytics import YOLO
 from streamlit_webrtc import webrtc_streamer, VideoTransformerBase, RTCConfiguration
 import av
+import pygame  # مكتبة الصوت
+
+# إعداد الصوت
+pygame.mixer.init()
+pygame.mixer.music.load("1.mp3")  # تأكد من وجود الملف في نفس المجلد أو حط المسار الصحيح
 
 # إعداد RTC
 RTC_CONFIGURATION = RTCConfiguration({
     "iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]
 })
 
-# تحميل موديل YOLO nano لسرعة أعلى
-model = YOLO("yolov8n.pt")  # استخدم موديل خفيف للتجربة
-model.fuse()  # لتسريع الـ inference
+# تحميل موديل YOLO nano
+model = YOLO("yolov8n.pt")
+model.fuse()
 
-# أسماء التصنيفات واللون
 CLASS_NAMES = ["microsleep", "neutral", "yawning"]
 COLOR_MAP = {
     "microsleep": (0, 0, 255),
@@ -25,14 +29,23 @@ COLOR_MAP = {
 # معالج الفيديو
 class FastVideoProcessor(VideoTransformerBase):
     def __init__(self):
-        self.frame_skip = 2  # نفذ على كل ثاني Frame
+        self.frame_skip = 2
         self.counter = 0
         self.prev_result = None
+        self.buzzer_on = False  # حالة تشغيل الصوت
+
+    def play_buzzer(self):
+        if not self.buzzer_on:
+            pygame.mixer.music.play(-1)  # تشغيل مستمر
+            self.buzzer_on = True
+
+    def stop_buzzer(self):
+        if self.buzzer_on:
+            pygame.mixer.music.stop()
+            self.buzzer_on = False
 
     def transform(self, frame):
         img = frame.to_ndarray(format="bgr24")
-
-        # تقليل الريزولوشن قبل المعالجة
         small_frame = cv2.resize(img, (320, 240))
 
         self.counter += 1
@@ -42,6 +55,8 @@ class FastVideoProcessor(VideoTransformerBase):
         else:
             results = self.prev_result
 
+        non_neutral_detected = False
+
         if results:
             for box, cls in zip(results.boxes.xyxy, results.boxes.cls):
                 x1, y1, x2, y2 = map(int, box)
@@ -50,12 +65,21 @@ class FastVideoProcessor(VideoTransformerBase):
                 label = CLASS_NAMES[label_index]
                 color = COLOR_MAP[label]
 
-                # تحجيم البوكس بناءً على الفرق في الريزولوشن
+                # توسيع الإحداثيات
                 x1, y1, x2, y2 = [int(x * 2) for x in (x1, y1, x2, y2)]
-
                 cv2.rectangle(img, (x1, y1), (x2, y2), color, 2)
                 cv2.putText(img, label, (x1, y1 - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.9, color, 2)
+
+                if label != "neutral":
+                    non_neutral_detected = True
+
+        # تحكم في الصوت
+        if non_neutral_detected:
+            self.play_buzzer()
+        else:
+            self.stop_buzzer()
+
         return img
 
 # Streamlit App
