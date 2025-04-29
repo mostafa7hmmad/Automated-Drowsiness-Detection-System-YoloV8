@@ -79,6 +79,6 @@ webrtc_ctx = webrtc_streamer(
 if webrtc_ctx.state.playing:
     if processor.buzzer_on:
         st.markdown(
-            "<audio autoplay><source src='alert.wav' type='audio/wav'></audio>",
+            "<audio autoplay><source src='alert.mp3' type='audio/wav'></audio>",
             unsafe_allow_html=True
         )
