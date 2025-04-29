@@ -1,38 +1,10 @@
-# Streamlit for creating the app
-streamlit==1.16.0
-
-# Ultralytics YOLO package for object detection
+streamlit==1.32.2
+opencv-python-headless==4.9.0.80
 ultralytics==8.3.120
-
-# OpenCV for video processing
-opencv-python==4.5.5.64
-
-# Streamlit WebRTC for video streaming
-streamlit-webrtc==0.42.0
-
-# SciPy for scientific computing
+streamlit-webrtc==0.45.0
+numpy==1.23.5
 scipy==1.9.3
-
-# Matplotlib for plotting (optional, but may be useful for visualization)
-matplotlib==3.5.2
-
-# PyTorch for deep learning (ensure compatibility with your YOLO model)
-torch==1.12.1+cpu
-
-# Numpy for numerical computations
-numpy==1.23.3
-
-# Pillow for image processing
 Pillow==9.2.0
-
-# pandas for data handling (optional)
-pandas==1.4.3
-
-# PyYAML for configuration management
-pyyaml==6.0
-
-# Requests for making HTTP requests (optional)
-requests==2.28.1
-
-# tqdm for progress bars (optional)
-tqdm==4.64.1
+torch==2.0.1
+torchaudio==2.0.2
+torchvision==0.15.2
